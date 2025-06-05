@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://cloudconvert.com/
+HostUrl=https://us-east.storage.cloudconvert.com/tasks/16f744e6-4c4f-4a31-8836-3f16b7035539/red%20small%20burger.icns?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cloudconvert-production%2F20250604%2Fva%2Fs3%2Faws4_request&X-Amz-Date=20250604T214902Z&X-Amz-Expires=86400&X-Amz-Signature=ad359b853152a70684c4edeaf293e6ed0a3f903474d8b386e3c7ed310ba0a2d6&X-Amz-SignedHeaders=host&response-content-disposition=attachment%3B%20filename%3D%22red%20small%20burger.icns%22&x-id=GetObject
