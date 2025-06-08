@@ -9,6 +9,8 @@ pub struct AppState {
     pub db: Arc<Mutex<Option<Pool<Sqlite>>>>,
     pub current_user: Arc<Mutex<Option<CurrentUser>>>,
     pub sync_status: Arc<Mutex<SyncStatus>>,
+    pub product_sync_state: Arc<Mutex<ProductSyncState>>,
+    pub auth_state: Arc<Mutex<AuthState>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,6 +29,44 @@ pub struct SyncStatus {
     pub last_sync: Option<DateTime<Utc>>,
     pub pending_count: i32,
     pub last_error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ProductSyncStatus {
+    Synced,
+    Syncing,
+    Error(String),
+}
+
+impl Default for ProductSyncStatus {
+    fn default() -> Self {
+        ProductSyncStatus::Synced
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ProductSyncState {
+    pub status: ProductSyncStatus,
+    pub last_synced: Option<DateTime<Utc>>,
+    pub products_count: usize,
+    pub error_message: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuthState {
+    pub is_authenticated: bool,
+    pub last_auth_check: Option<DateTime<Utc>>,
+    pub auth_error: Option<String>,
+}
+
+impl Default for AuthState {
+    fn default() -> Self {
+        Self {
+            is_authenticated: false,
+            last_auth_check: None,
+            auth_error: None,
+        }
+    }
 }
 
 impl AppState {
@@ -73,5 +113,31 @@ impl AppState {
     pub async fn get_sync_status(&self) -> SyncStatus {
         let status = self.sync_status.lock().await;
         status.clone()
+    }
+    
+    pub async fn update_product_sync_state<F>(&self, updater: F) 
+    where
+        F: FnOnce(&mut ProductSyncState),
+    {
+        let mut state = self.product_sync_state.lock().await;
+        updater(&mut state);
+    }
+    
+    pub async fn get_product_sync_state(&self) -> ProductSyncState {
+        let state = self.product_sync_state.lock().await;
+        state.clone()
+    }
+    
+    pub async fn update_auth_state<F>(&self, updater: F) 
+    where
+        F: FnOnce(&mut AuthState),
+    {
+        let mut state = self.auth_state.lock().await;
+        updater(&mut state);
+    }
+    
+    pub async fn get_auth_state(&self) -> AuthState {
+        let state = self.auth_state.lock().await;
+        state.clone()
     }
 }

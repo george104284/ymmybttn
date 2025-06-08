@@ -32,6 +32,9 @@ pub enum AppError {
     
     #[error("Internal error: {0}")]
     Internal(String),
+    
+    #[error("Configuration error: {0}")]
+    Config(String),
 }
 
 // Convert AppError to a serializable format for the frontend
@@ -49,6 +52,7 @@ impl AppError {
                 AppError::NotFound(_) => "not_found",
                 AppError::AlreadyExists(_) => "already_exists",
                 AppError::Internal(_) => "internal",
+                AppError::Config(_) => "config",
             },
             message: self.to_string(),
         }

@@ -1,5 +1,4 @@
 use sqlx::{migrate::Migrator, sqlite::SqlitePoolOptions, Pool, Sqlite};
-use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 use crate::error::AppError;
@@ -118,4 +117,71 @@ pub async fn check_user_auth(pool: &DbPool, email: &str) -> Result<Option<models
     .await?;
     
     Ok(user)
+}
+
+// Product-related database operations
+pub async fn clear_all_products(pool: &DbPool) -> Result<(), AppError> {
+    sqlx::query("DELETE FROM products")
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+pub async fn upsert_product(pool: &DbPool, product: &models::Product) -> Result<(), AppError> {
+    sqlx::query(
+        r#"
+        INSERT INTO products (
+            catalog_product_id, product_name, category_id, 
+            preferred_measurement, measurement_type, description, 
+            is_active, updated_at, synced_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(catalog_product_id) DO UPDATE SET 
+            product_name = excluded.product_name,
+            category_id = excluded.category_id,
+            preferred_measurement = excluded.preferred_measurement,
+            measurement_type = excluded.measurement_type,
+            description = excluded.description,
+            is_active = excluded.is_active,
+            updated_at = excluded.updated_at,
+            synced_at = CURRENT_TIMESTAMP
+        "#
+    )
+    .bind(&product.catalog_product_id)
+    .bind(&product.product_name)
+    .bind(&product.category_id)
+    .bind(&product.preferred_measurement)
+    .bind(&product.measurement_type)
+    .bind(&product.description)
+    .bind(product.is_active)
+    .bind(&product.updated_at)
+    .execute(pool)
+    .await?;
+    
+    Ok(())
+}
+
+pub async fn delete_product(pool: &DbPool, product_id: &str) -> Result<(), AppError> {
+    sqlx::query("DELETE FROM products WHERE catalog_product_id = ?")
+        .bind(product_id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+pub async fn get_all_products(pool: &DbPool) -> Result<Vec<models::Product>, AppError> {
+    let products = sqlx::query_as::<_, models::Product>(
+        "SELECT * FROM products WHERE is_active = 1 ORDER BY product_name"
+    )
+    .fetch_all(pool)
+    .await?;
+    
+    Ok(products)
+}
+
+pub async fn get_product_count(pool: &DbPool) -> Result<usize, AppError> {
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM products WHERE is_active = 1")
+        .fetch_one(pool)
+        .await?;
+    
+    Ok(count as usize)
 }

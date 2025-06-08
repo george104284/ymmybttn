@@ -1,7 +1,7 @@
 use crate::db::models::*;
-use crate::error::AppError;
-use crate::state::AppState;
-use tauri::State;
+use crate::state::{AppState, ProductSyncState, AuthState};
+use crate::sync;
+use tauri::{State, AppHandle};
 use uuid::Uuid;
 use chrono::Utc;
 
@@ -72,6 +72,43 @@ pub async fn get_products(
     } else {
         Err("Database not initialized".to_string())
     }
+}
+
+// Get all products (new implementation using db helper)
+#[tauri::command]
+pub async fn get_all_products(
+    state: State<'_, AppState>,
+) -> Result<Vec<Product>, String> {
+    let pool = state.get_db().await
+        .map_err(|e| format!("Database error: {}", e))?;
+    
+    crate::db::get_all_products(&pool).await
+        .map_err(|e| format!("Failed to get products: {}", e))
+}
+
+// Get sync status
+#[tauri::command]
+pub async fn get_sync_status(
+    state: State<'_, AppState>,
+) -> Result<ProductSyncState, String> {
+    Ok(state.get_product_sync_state().await)
+}
+
+// Force sync - now much simpler with postgrest
+#[tauri::command]
+pub async fn force_sync(
+    app_handle: AppHandle,
+) -> Result<(), String> {
+    sync::force_sync(&app_handle).await
+        .map_err(|e| format!("Sync failed: {}", e))
+}
+
+// Get authentication status
+#[tauri::command]
+pub async fn get_auth_status(
+    state: State<'_, AppState>,
+) -> Result<AuthState, String> {
+    Ok(state.get_auth_state().await)
 }
 
 // Get current prices for a restaurant

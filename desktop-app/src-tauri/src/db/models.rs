@@ -32,8 +32,12 @@ pub struct SubscriptionCache {
 pub struct Product {
     pub catalog_product_id: String,
     pub product_name: String,
+    pub category_id: Option<String>,
     pub preferred_measurement: String,
     pub measurement_type: String,
+    pub description: Option<String>,
+    pub is_active: bool,
+    pub updated_at: Option<DateTime<Utc>>,  // Changed from last_modified to match sync code
     pub synced_at: Option<DateTime<Utc>>,
 }
 

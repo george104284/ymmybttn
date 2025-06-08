@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useProducts } from "../hooks/useProducts";
+import { SyncStatus } from "../components/SyncStatus";
 
 interface Restaurant {
   restaurant_id: string;
@@ -18,11 +20,6 @@ interface LocalCurrentPrice {
   source_type: string;
 }
 
-interface Product {
-  catalog_product_id: string;
-  product_name: string;
-  preferred_measurement: string;
-}
 
 interface Distributor {
   distributor_id: string;
@@ -33,10 +30,12 @@ export function Prices() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>("");
   const [prices, setPrices] = useState<LocalCurrentPrice[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [distributors, setDistributors] = useState<Distributor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Use the products hook for real-time synced products
+  const { products, loading: productsLoading, error: productsError } = useProducts();
 
   useEffect(() => {
     loadInitialData();
@@ -51,14 +50,12 @@ export function Prices() {
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-      const [restaurantsData, productsData, distributorsData] = await Promise.all([
+      const [restaurantsData, distributorsData] = await Promise.all([
         invoke<Restaurant[]>("get_restaurants"),
-        invoke<Product[]>("get_products"),
         invoke<Distributor[]>("get_distributors"),
       ]);
 
       setRestaurants(restaurantsData);
-      setProducts(productsData);
       setDistributors(distributorsData);
 
       // Auto-select first restaurant
@@ -119,7 +116,7 @@ export function Prices() {
     return acc;
   }, {} as Record<string, string>);
 
-  if (isLoading) {
+  if (isLoading || productsLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-lg">Loading prices...</div>
@@ -127,12 +124,12 @@ export function Prices() {
     );
   }
 
-  if (error) {
+  if (error || productsError) {
     return (
       <div className="p-8">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           <p className="font-bold">Error</p>
-          <p className="text-sm">{error}</p>
+          <p className="text-sm">{error || productsError}</p>
         </div>
       </div>
     );
@@ -141,7 +138,12 @@ export function Prices() {
   return (
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Current Prices</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Current Prices</h1>
+          <div className="mt-2">
+            <SyncStatus />
+          </div>
+        </div>
         {restaurants.length > 0 && (
           <select
             value={selectedRestaurant}
@@ -216,11 +218,37 @@ export function Prices() {
       ))}
 
       {prices.length === 0 && (
-        <div className="bg-gray-50 rounded-lg p-8 text-center">
-          <p className="text-gray-500">No prices found for this restaurant.</p>
-          <p className="text-sm text-gray-400 mt-2">
-            Import a CSV file to add pricing data.
-          </p>
+        <div className="space-y-6">
+          <div className="bg-gray-50 rounded-lg p-8 text-center">
+            <p className="text-gray-500">No prices found for this restaurant.</p>
+            <p className="text-sm text-gray-400 mt-2">
+              Import a CSV file to add pricing data.
+            </p>
+          </div>
+
+          {products.length > 0 && (
+            <div className="bg-white rounded-lg shadow">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-medium">Available Products ({products.length})</h2>
+                <p className="text-sm text-gray-500 mt-1">These products are synced from the web catalog</p>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {products.map((product) => (
+                    <div key={product.catalog_product_id} className="border border-gray-200 rounded-lg p-4">
+                      <h3 className="font-medium text-gray-900">{product.product_name}</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Measurement: {product.preferred_measurement} ({product.measurement_type})
+                      </p>
+                      {product.description && (
+                        <p className="text-sm text-gray-500 mt-2">{product.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

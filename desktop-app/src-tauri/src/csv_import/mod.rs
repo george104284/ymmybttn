@@ -5,9 +5,9 @@ use std::path::Path;
 
 // CSV import functionality - stub for now
 pub async fn import_csv_file(
-    pool: &DbPool,
-    file_path: &Path,
-    restaurant_id: &str,
+    _pool: &DbPool,
+    _file_path: &Path,
+    _restaurant_id: &str,
     distributor_id: &str,
     effective_date: NaiveDate,
 ) -> Result<PriceImportResult, AppError> {
@@ -24,14 +24,14 @@ pub async fn import_csv_file(
 }
 
 // Validate CSV format
-pub fn validate_csv_format(file_path: &Path) -> Result<bool, AppError> {
+pub fn validate_csv_format(_file_path: &Path) -> Result<bool, AppError> {
     // TODO: Implement CSV validation
     // Check headers, data types, etc.
     Ok(true)
 }
 
 // Parse CSV headers to determine column mapping
-pub fn detect_column_mapping(headers: &[String]) -> Result<CsvColumnMapping, AppError> {
+pub fn detect_column_mapping(_headers: &[String]) -> Result<CsvColumnMapping, AppError> {
     // TODO: Implement intelligent column detection
     Ok(CsvColumnMapping {
         item_code_column: 0,
